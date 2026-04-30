@@ -2,7 +2,7 @@
   "name": "Absensi Harian Asatidzah",
   "short_name": "Absen Harian",
   "description": "Aplikasi Lite Khusus Input Kehadiran Sesi Harian",
-  "start_url": "./index.html",
+  "start_url": "./absen-harian.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",

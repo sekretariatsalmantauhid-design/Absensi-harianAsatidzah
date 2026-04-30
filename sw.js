@@ -1,23 +1,26 @@
-const CACHE_NAME = 'absen-harian-lite-v1';
+// UBAH ANGKA INI SETIAP KALI BOS UPDATE index.html (Misal: v2, v3, v4)
+const CACHE_NAME = 'absen-harian-lite-v2'; 
+
 const urlsToCache = [
-  './absen-harian.html',
+  './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css'
 ];
 
-// Install Service Worker
+// Install Service Worker & Paksa Langsung Aktif
 self.addEventListener('install', event => {
+  self.skipWaiting(); // <--- Trik Rahasia 1: Paksa satpam ganti shift!
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Cache Absen Harian Lite terbuka!');
+        console.log('Cache aplikasi versi baru siap!');
         return cache.addAll(urlsToCache);
       })
   );
 });
 
-// Strategi: Ambil dari Internet dulu, kalau gagal (offline) ambil dari Cache
+// Strategi: Ambil dari Internet dulu (Network First)
 self.addEventListener('fetch', event => {
   event.respondWith(
     fetch(event.request).catch(() => {
@@ -26,7 +29,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// Update Service Worker kalau ada versi baru
+// Bersihkan Cache versi lama saat update
 self.addEventListener('activate', event => {
   const cacheWhitelist = [CACHE_NAME];
   event.waitUntil(
@@ -34,10 +37,13 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheWhitelist.indexOf(cacheName) === -1) {
+            console.log('Menghapus cache jadul:', cacheName);
             return caches.delete(cacheName);
           }
         })
       );
+    }).then(() => {
+      return self.clients.claim(); // <--- Trik Rahasia 2: Ambil alih layar HP user!
     })
   );
 });
