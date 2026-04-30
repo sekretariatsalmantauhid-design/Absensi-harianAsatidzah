@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Harian Asatidzah</title>
+    
+    <meta name="theme-color" content="#4f46e5">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        
+        .spreadsheet-table th, .spreadsheet-table td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: center; }
+        .spreadsheet-table th { background-color: #f9fafb; font-weight: 600; color: #374151; font-size: 0.75rem; text-transform: uppercase; }
+        .spreadsheet-table td { font-size: 0.875rem; color: #111827; }
+        .spreadsheet-table .col-name { text-align: left; font-weight: 500; min-width: 180px; }
+        
+        .table-container-scroll {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* --- CSS PRINT DINAMIS --- */
+        @media print {
+            body { background-color: white; }
+            nav, .no-print, #loader { display: none !important; }
+            .shadow-sm { box-shadow: none !important; border: none !important; }
+            .table-container-scroll { overflow: visible !important; }
+            .spreadsheet-table td { white-space: normal; word-break: break-word; font-size: 8px !important; }
+            @page { size: landscape; margin: 1cm; }
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased h-screen flex flex-col">
+
+    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-clipboard-user text-indigo-600 text-2xl"></i>
+                    <div>
+                        <span class="font-bold text-lg text-gray-900 tracking-tight block leading-none">ABSENSI HARIAN</span>
+                        <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider hidden sm:block">Aplikasi Mode Cepat</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2 sm:gap-3">
+                    <div class="flex items-center gap-2 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-200">
+                        <i class="fas fa-calendar-alt text-indigo-600"></i>
+                        <select id="bulan-selector" class="bg-transparent border-none text-gray-700 text-xs font-bold focus:ring-0 cursor-pointer outline-none">
+                        </select>
+                    </div>
+                    <button onclick="exportToPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-sm flex items-center gap-2">
+                        <i class="fas fa-print"></i> <span class="hidden lg:inline">Cetak</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 relative">
+        <div id="loader" class="absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center">
+            <i class="fas fa-circle-notch fa-spin text-indigo-500 text-4xl mb-3"></i>
+            <p class="text-gray-600 font-medium animate-pulse">Menghubungkan ke Cloud...</p>
+        </div>
+
+        <div class="max-w-[1600px] mx-auto">
+            <div class="mb-4 no-print">
+                <h1 class="text-2xl font-bold text-gray-900">Input Kehadiran Asatidzah</h1>
+                <p class="text-gray-500 mt-1 text-sm leading-relaxed">
+                    Ketik jam kehadiran di kotak sesi yang sesuai (1-9). Pisahkan dengan koma jika multi-sesi.
+                </p>
+            </div>
+            
+            <div class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm no-print">
+                <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fas fa-clock text-indigo-500 mr-2"></i>Master Waktu Sesi (Jam Pelajaran)</h3>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="master-sesi-container">
+                    </div>
+            </div>
+
+            <div class="flex items-center justify-between bg-indigo-600 text-white rounded-t-xl px-4 py-3 shadow-md no-print mt-8">
+                <button onclick="gantiTanggal(-1)" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded flex items-center transition-colors">
+                    <i class="fas fa-chevron-left mr-2"></i> <span class="text-sm font-medium">Sblm</span>
+                </button>
+                <div class="text-center">
+                    <p class="text-xs text-indigo-200 font-medium tracking-wider uppercase mb-0.5">TANGGAL AKTIF</p>
+                    <h2 class="text-lg font-bold" id="label-tanggal-aktif">Memuat...</h2>
+                </div>
+                <button onclick="gantiTanggal(1)" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded flex items-center transition-colors">
+                    <span class="text-sm font-medium">Brik</span> <i class="fas fa-chevron-right ml-2"></i>
+                </button>
+            </div>
+
+            <div id="waktu-tables-container"></div>
+        </div>
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        // Konfigurasi Firebase SAMA PERSIS dengan Aplikasi Master
+        const firebaseConfig = {
+            apiKey: "AIzaSyBvFNTZWlrLp_7aeCCVsKwKiagvHkplIR0",
+            authDomain: "absensi-asatidzahattauhid.firebaseapp.com",
+            databaseURL: "https://absensi-asatidzahattauhid-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "absensi-asatidzahattauhid",
+            storageBucket: "absensi-asatidzahattauhid.firebasestorage.app",
+            messagingSenderId: "81697342613",
+            appId: "1:81697342613:web:808cc73944fecdafc8879c"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // =========================================================
+        // PENGATURAN STATE GLOBAL
+        // =========================================================
+        let CURRENT_MONTH_KEY = ""; 
+        let JUMLAH_HARI = 31;
+        let TANGGAL_AKTIF = new Date().getDate(); // Otomatis mengarah ke tanggal hari ini saat dibuka
+        const TOTAL_SESI = 9; 
+        
+        const KELAS_LIST = [
+            { id: 'aly1', nama: 'Kelas Aly 1' }, { id: 'aly2', nama: 'Kelas Aly 2' },
+            { id: 'idad1', nama: 'Kelas Idad 1' }, { id: 'idad2', nama: 'Kelas Idad 2' }
+        ];
+
+        const MASTER_GURU = [
+            { id: 1, nama: "Ust. Ahmad Jamil", status: "Guru" }, { id: 2, nama: "Ust. Moch. Dahlan Sholeh", status: "Guru" },
+            { id: 3, nama: "Ust. Tsabit Al Aqdam", status: "Guru" }, { id: 4, nama: "Ust. Ahmad Syahirul", status: "Guru" },
+            { id: 5, nama: "Ust. Thoriq Ibrahim", status: "Guru" }, { id: 6, nama: "Ust. Muh. Salam Ramadhani", status: "Guru" },
+            { id: 7, nama: "Ust. Muh. Nur Romadhon", status: "Guru" }, { id: 8, nama: "Ust. Wisnu Ginanjar", status: "Guru" },
+            { id: 9, nama: "Ust. Salman Syah Khatami", status: "Guru" }, { id: 10, nama: "Ust. Muhammad", status: "Guru" },
+            { id: 11, nama: "Ust. Fahmi Amiruddin Mubarok", status: "Guru" }
+        ];
+
+        let waktuData = {}; 
+        
+        let masterSesiData = {
+            1: "07:30 - 08:15", 2: "08:15 - 09:00", 3: "09:00 - 09:45",
+            4: "10:00 - 10:45", 5: "10:45 - 11:30", 6: "13:00 - 13:45",
+            7: "13:45 - 14:30", 8: "16:00 - 16:45", 9: "16:45 - 17:30"
+        };
+
+        function createDefaultWaktu() {
+            let newWaktu = {};
+            KELAS_LIST.forEach(kls => { 
+                newWaktu[kls.id] = MASTER_GURU.map(g => ({ 
+                    id: g.id, 
+                    nama: g.nama, 
+                    hari: Array(31).fill(null).map(() => Array(TOTAL_SESI).fill("")) 
+                })); 
+            });
+            return newWaktu;
+        }
+
+        // =========================================================
+        // LOGIKA PEMILIH BULAN & TANGGAL
+        // =========================================================
+        const namaBulanArr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+        function initMonthSelector() {
+            const selector = document.getElementById('bulan-selector');
+            let html = '';
+            
+            let currentDate = new Date();
+            // Simpan tanggal asli agar tidak ke-reset ke tanggal 1 saat buka aplikasi pertama kali
+            let currentDay = currentDate.getDate(); 
+            currentDate.setDate(1); 
+            
+            const START_YEAR = 2025;
+            const START_MONTH = 5; // Juni
+            const startDate = new Date(START_YEAR, START_MONTH, 1);
+            
+            if (currentDate < startDate) {
+                currentDate = new Date(startDate.getTime());
+                TANGGAL_AKTIF = 1; // Jika dipaksa ke masa depan/lalu, reset tanggal
+            } else {
+                TANGGAL_AKTIF = currentDay; // Set ke tanggal aslinya (hari ini)
+            }
+            
+            while(currentDate >= startDate) {
+                let monthStr = namaBulanArr[currentDate.getMonth()];
+                let yearStr = currentDate.getFullYear();
+                
+                let key = `${monthStr}_${yearStr}`;
+                let display = `${monthStr} ${yearStr}`;
+                
+                html += `<option value="${key}">${display}</option>`;
+                currentDate.setMonth(currentDate.getMonth() - 1); 
+            }
+            
+            selector.innerHTML = html;
+            CURRENT_MONTH_KEY = selector.value; 
+            
+            selector.addEventListener('change', (e) => {
+                CURRENT_MONTH_KEY = e.target.value;
+                TANGGAL_AKTIF = 1; // Jika manual ganti bulan, paksa mulai dari tgl 1
+                loadDataFromCloud();
+            });
+        }
+
+        function updateDaysInMonth() {
+            let [b, y] = CURRENT_MONTH_KEY.split('_');
+            const mMap = {'Januari':0, 'Februari':1, 'Maret':2, 'April':3, 'Mei':4, 'Juni':5, 'Juli':6, 'Agustus':7, 'September':8, 'Oktober':9, 'November':10, 'Desember':11};
+            
+            JUMLAH_HARI = new Date(y, mMap[b] + 1, 0).getDate(); 
+            // Validasi supaya tidak bablas jika bulan berganti ke hari yg lebih sedikit (misal 31 ke 28)
+            if (TANGGAL_AKTIF > JUMLAH_HARI) TANGGAL_AKTIF = JUMLAH_HARI; 
+            updateLabelTanggal();
+        }
+
+        function updateLabelTanggal() {
+            let [b, y] = CURRENT_MONTH_KEY.split('_');
+            document.getElementById('label-tanggal-aktif').innerText = `${TANGGAL_AKTIF} ${b} ${y}`;
+        }
+
+        window.gantiTanggal = function(step) {
+            let newVal = TANGGAL_AKTIF + step;
+            if (newVal >= 1 && newVal <= JUMLAH_HARI) {
+                TANGGAL_AKTIF = newVal;
+                updateLabelTanggal();
+                renderWaktuTables(); 
+            }
+        }
+
+        // =========================================================
+        // FUNGSI LOAD & SAVE DATA DATABASE
+        // =========================================================
+        async function loadDataFromCloud() {
+            document.getElementById('loader').style.display = 'flex';
+            
+            updateDaysInMonth();
+
+            // Hanya menarik data WaktuHadir dan MasterSesi (Lebih Hemat Kuota & Cepat!)
+            const PATH_WAKTU = `Rekap_V4/${CURRENT_MONTH_KEY}/WaktuHadir_HarianSesi`; 
+            const PATH_MASTER_SESI = `Settings/MasterSesi`;
+
+            try {
+                const snapSesi = await get(ref(db, PATH_MASTER_SESI));
+                if(snapSesi.exists()) masterSesiData = snapSesi.val();
+                renderMasterSesiPanel();
+
+                const snapWaktu = await get(ref(db, PATH_WAKTU));
+                if(snapWaktu.exists()) waktuData = snapWaktu.val(); else waktuData = createDefaultWaktu();
+
+            } catch (error) {
+                console.error("Gagal terhubung ke Database:", error);
+                waktuData = createDefaultWaktu();
+                renderMasterSesiPanel();
+            }
+
+            renderWaktuTables();
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function saveWaktuData() { set(ref(db, `Rekap_V4/${CURRENT_MONTH_KEY}/WaktuHadir_HarianSesi`), waktuData); }
+        function saveMasterSesiData() { set(ref(db, `Settings/MasterSesi`), masterSesiData); }
+
+        // --- RENDER UI --- //
+        
+        function renderMasterSesiPanel() {
+            let html = '';
+            for(let i=1; i<=TOTAL_SESI; i++) {
+                let val = masterSesiData[i] || "";
+                html += `
+                <div class="flex items-center bg-white border border-gray-200 rounded-md p-1.5 shadow-sm">
+                    <span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded mr-2">S${i}</span>
+                    <div class="text-xs text-gray-800 font-medium outline-none cursor-text w-full" contenteditable="true" onblur="handleMasterSesi(${i}, this)">${val}</div>
+                </div>`;
+            }
+            document.getElementById('master-sesi-container').innerHTML = html;
+        }
+
+        window.handleMasterSesi = function(sesiKe, el) {
+            let val = el.innerText.trim();
+            if(masterSesiData[sesiKe] !== val) {
+                masterSesiData[sesiKe] = val;
+                saveMasterSesiData();
+                renderWaktuTables(); 
+            }
+        }
+
+        function renderWaktuTables() {
+            let html = ''; let sesiHeaders = ''; 
+            
+            for(let i=1; i<=TOTAL_SESI; i++) {
+                let referensiWaktu = masterSesiData[i] || "-";
+                sesiHeaders += `<th class="border-b border-gray-200 bg-indigo-50 w-28 min-w-[100px] p-2 text-center border-r border-indigo-100">
+                    <div class="text-indigo-900 font-bold mb-1">SESI ${i}</div>
+                    <div class="text-[9px] font-normal text-indigo-500 bg-white rounded border border-indigo-100 inline-block px-1">${referensiWaktu}</div>
+                </th>`;
+            }
+            
+            let indexTanggalArray = TANGGAL_AKTIF - 1; 
+
+            KELAS_LIST.forEach(kls => {
+                html += `<div class="mb-8 bg-white shadow-sm border-x border-b border-gray-200 overflow-hidden last:rounded-b-xl">
+                    <div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center">
+                        <h2 class="font-bold text-indigo-800 text-lg"><i class="fas fa-users text-indigo-600 mr-2"></i> ${kls.nama}</h2>
+                    </div>
+                    <div class="table-container-scroll">
+                        <table class="w-full text-left border-collapse spreadsheet-table min-w-max">
+                            <thead class="bg-gray-50 sticky top-0 z-20 shadow-sm">
+                                <tr>
+                                    <th class="sticky left-0 bg-gray-100 z-30 w-12 border-r-2">No</th>
+                                    <th class="col-name sticky left-12 bg-gray-100 z-30 border-r-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nama Asatidzah</th>
+                                    ${sesiHeaders}
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">`;
+                            
+                waktuData[kls.id].forEach((row, rIdx) => {
+                    let cellsHTML = '';
+                    for(let cIdx=0; cIdx<TOTAL_SESI; cIdx++) {
+                        let val = row.hari[indexTanggalArray][cIdx] || ""; 
+                        let cls = val ? 'bg-indigo-50 font-medium text-indigo-900 border-indigo-200' : 'border-gray-200'; 
+                        
+                        cellsHTML += `<td class="${cls} cursor-text hover:bg-indigo-100 outline-none focus:ring-2 focus:ring-indigo-400 text-xs border-r min-w-[100px] whitespace-normal" contenteditable="true" onblur="handleWaktuCell('${kls.id}', ${rIdx}, ${indexTanggalArray}, ${cIdx}, this)">${val}</td>`;
+                    }
+                    html += `<tr class="hover:bg-gray-50 transition-colors group">
+                                <td class="bg-white border-r-2 sticky left-0 z-10 group-hover:bg-gray-50">${row.id}</td>
+                                <td class="col-name bg-white border-r-2 sticky left-12 z-10 font-bold text-gray-900 group-hover:bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${row.nama}</td>
+                                ${cellsHTML}
+                             </tr>`;
+                });
+                html += `</tbody></table></div></div>`;
+            });
+            document.getElementById('waktu-tables-container').innerHTML = html;
+        }
+
+        window.handleWaktuCell = function(kelasId, guruIndex, tglIndex, sesiIndex, el) {
+            let val = el.innerText.trim();
+            if(waktuData[kelasId][guruIndex].hari[tglIndex][sesiIndex] !== val) { 
+                waktuData[kelasId][guruIndex].hari[tglIndex][sesiIndex] = val; 
+                saveWaktuData(); 
+                if(val) el.classList.add('bg-indigo-50', 'font-medium', 'text-indigo-900', 'border-indigo-200'); 
+                else {
+                    el.classList.remove('bg-indigo-50', 'font-medium', 'text-indigo-900', 'border-indigo-200'); 
+                    el.classList.add('border-gray-200');
+                }
+            }
+        }
+
+        window.exportToPDF = function() { window.print(); }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            initMonthSelector(); 
+            loadDataFromCloud();
+        });
+    </script>
+    <script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Sistem Lite Terdaftar!'))
+        .catch(err => console.log('Gagal daftar:', err));
+    });
+  }
+</script>
+
+</body>
+</html>
