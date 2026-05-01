@@ -1,7 +1,8 @@
 // UBAH ANGKA INI SETIAP KALI BOS UPDATE index.html (Misal: v2, v3, v4)
-const CACHE_NAME = 'absen-harian-lite-v3'; 
+const CACHE_NAME = 'absen-harian-lite-v3.3'; 
 
 const urlsToCache = [
+ './',
   './index.html',
   './manifest.json',
   'https://cdn.tailwindcss.com',
