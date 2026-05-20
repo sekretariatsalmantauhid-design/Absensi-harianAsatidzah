@@ -3,109 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Absensi Harian Asatidzah</title>
-    
+    <title>Absensi Pintar Asatidzah</title>
     <meta name="theme-color" content="#4f46e5">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icon-192x192.png">
-    
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        
-        .spreadsheet-table th, .spreadsheet-table td { border: 1px solid #e5e7eb; padding: 0.5rem; text-align: center; }
-        .spreadsheet-table th { background-color: #f9fafb; font-weight: 600; color: #374151; font-size: 0.75rem; text-transform: uppercase; }
-        .spreadsheet-table td { font-size: 0.875rem; color: #111827; }
-        .spreadsheet-table .col-name { text-align: left; font-weight: 500; min-width: 180px; }
-        
-        .table-container-scroll {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        /* --- CSS PRINT DINAMIS --- */
-        @media print {
-            body { background-color: white; }
-            nav, .no-print, #loader { display: none !important; }
-            .shadow-sm { box-shadow: none !important; border: none !important; }
-            .table-container-scroll { overflow: visible !important; }
-            .spreadsheet-table td { white-space: normal; word-break: break-word; font-size: 8px !important; }
-            @page { size: landscape; margin: 1cm; }
-        }
+        .hidden-section { display: none !important; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-absen { transition: all 0.1s; }
+        .btn-absen:active { transform: translateY(4px); }
     </style>
 </head>
-<body class="text-gray-800 antialiased h-screen flex flex-col">
+<body class="text-gray-800 antialiased min-h-screen flex flex-col items-center justify-center relative p-4">
 
-    <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-clipboard-user text-indigo-600 text-2xl"></i>
-                    <div>
-                        <span class="font-bold text-lg text-gray-900 tracking-tight block leading-none">ABSENSI HARIAN</span>
-                        <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider hidden sm:block">Aplikasi Mode Cepat</span>
-                    </div>
+    <div id="loader" class="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center fade-in">
+        <i class="fas fa-circle-notch fa-spin text-indigo-600 text-5xl mb-4"></i>
+        <p class="text-indigo-900 font-bold tracking-widest uppercase text-sm animate-pulse">Menyelaraskan Data...</p>
+    </div>
+
+    <div id="login-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden hidden-section fade-in">
+        <div class="bg-indigo-600 p-8 text-center">
+            <h1 class="text-2xl font-black text-white">Ahlan Wa Sahlan</h1>
+            <p class="text-indigo-200 text-sm font-medium mt-1">Sistem Absensi Harian Asatidzah</p>
+        </div>
+        <div class="p-8">
+            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pilih Identitas Anda</label>
+            <select id="guru-selector" class="w-full bg-gray-50 border-2 border-gray-200 text-gray-800 font-bold rounded-xl p-4 mb-6 outline-none">
+                <option value="" disabled selected>-- Sedang memuat nama... --</option>
+            </select>
+            <button onclick="loginGuru()" class="w-full bg-indigo-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg">Masuk Aplikasi</button>
+        </div>
+    </div>
+
+    <div id="app-view" class="w-full max-w-md flex flex-col h-[95vh] hidden-section fade-in">
+        <div class="flex justify-between items-center bg-white rounded-2xl p-4 shadow-sm mb-4 shrink-0 border border-gray-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-lg"><i class="fas fa-user"></i></div>
+                <div><p class="text-[10px] text-gray-500 font-bold uppercase">Asatidzah Aktif</p><p class="font-bold text-gray-900" id="display-nama">Ust. Nama</p></div>
+            </div>
+            <button onclick="logoutGuru()" class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center"><i class="fas fa-sign-out-alt"></i></button>
+        </div>
+
+        <div class="bg-gradient-to-br from-gray-900 to-indigo-900 rounded-3xl p-6 shadow-xl text-center mb-4 shrink-0">
+            <p class="text-indigo-200 font-medium text-sm tracking-widest uppercase mb-1" id="display-tanggal">Senin, 1 Jan 2026</p>
+            <h2 class="text-6xl font-black text-white tracking-tight" id="digital-clock">00:00</h2>
+        </div>
+
+        <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4 shrink-0 text-center">
+            <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1"><i class="fas fa-calendar-week"></i> Jadwal Mengajar Hari Ini</p>
+            <p class="text-blue-900 font-bold text-sm" id="info-jadwal-mapel">Memeriksa jadwal di server...</p>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-md border border-gray-100 p-6 flex-1 flex flex-col overflow-y-auto">
+            <h3 class="font-bold text-gray-800 text-lg mb-4 border-b pb-2">Form Kehadiran</h3>
+            
+            <div class="space-y-4 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">1. Mengajar di Kelas</label>
+                    <select id="input-kelas" onchange="updateDropdownSesi()" class="w-full bg-gray-50 border border-gray-200 font-bold rounded-xl p-3 outline-none cursor-pointer">
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 mb-1">2. Sesi Ke (Auto-Deteksi Jam)</label>
+                    <select id="input-sesi" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold rounded-xl p-3 outline-none pointer-events-none appearance-none">
+                    </select>
+                    <p class="text-[10px] text-indigo-500 mt-1 italic" id="status-telat"><i class="fas fa-robot"></i> Sistem otomatis memilih sesi sesuai jam saat ini.</p>
                 </div>
                 
-                <div class="flex items-center gap-2 sm:gap-3">
-                    <div class="flex items-center gap-2 bg-gray-50 px-2 py-1.5 rounded-lg border border-gray-200">
-                        <i class="fas fa-calendar-alt text-indigo-600"></i>
-                        <select id="bulan-selector" class="bg-transparent border-none text-gray-700 text-xs font-bold focus:ring-0 cursor-pointer outline-none">
-                        </select>
-                    </div>
-                    <button onclick="exportToPDF()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors shadow-sm flex items-center gap-2">
-                        <i class="fas fa-print"></i> <span class="hidden lg:inline">Cetak</span>
+                <div id="wadah-telat" class="hidden-section bg-orange-50 border border-orange-200 p-3 rounded-xl">
+                    <label class="block text-xs font-bold text-orange-700 mb-1"><i class="fas fa-exclamation-triangle"></i> Anda Terlambat! Mohon tulis alasan:</label>
+                    <input type="text" id="input-alasan-telat" placeholder="Misal: Ban bocor, hujan lebat..." class="w-full bg-white border border-orange-300 text-sm rounded-lg p-2 outline-none focus:ring-orange-500">
+                </div>
+            </div>
+
+            <div class="mt-auto space-y-3">
+                <button id="btn-absen-utama" onclick="kirimAbsenHadir()" class="btn-absen w-full bg-indigo-600 text-white font-black text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-fingerprint text-2xl"></i> REKAM JAM MASUK
+                </button>
+                
+                <div class="flex gap-2">
+                    <button onclick="bukaModalHalangan()" class="flex-1 bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-100 hover:bg-red-100 transition-colors text-sm">
+                        <i class="fas fa-briefcase-medical mr-1"></i> Sakit/Udzur
+                    </button>
+                    <button onclick="kirimAbsenKeluar()" class="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl border border-gray-200 hover:bg-gray-200 transition-colors text-sm">
+                        Jam Keluar <i class="fas fa-sign-out-alt ml-1"></i>
                     </button>
                 </div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <main class="flex-1 overflow-auto p-4 sm:p-6 lg:p-8 relative">
-        <div id="loader" class="absolute inset-0 bg-white/90 z-40 flex flex-col items-center justify-center">
-            <i class="fas fa-circle-notch fa-spin text-indigo-500 text-4xl mb-3"></i>
-            <p class="text-gray-600 font-medium animate-pulse">Menghubungkan ke Cloud...</p>
-        </div>
-
-        <div class="max-w-[1600px] mx-auto">
-            <div class="mb-4 no-print">
-                <h1 class="text-2xl font-bold text-gray-900">Input Kehadiran Asatidzah</h1>
-                <p class="text-gray-500 mt-1 text-sm leading-relaxed">
-                    Ketik jam kehadiran di kotak sesi yang sesuai (1-9). Pisahkan dengan koma jika multi-sesi.
-                </p>
-            </div>
+    <div id="modal-halangan" class="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden-section fade-in">
+        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
+            <h3 class="text-xl font-bold text-red-600 mb-2"><i class="fas fa-notes-medical"></i> Form Izin / Sakit</h3>
+            <p class="text-xs text-gray-500 mb-4">Data ini akan otomatis tercatat sebagai (S) atau (I) di rekap bulanan Admin.</p>
             
-            <div class="mb-6 bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm no-print">
-                <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fas fa-clock text-indigo-500 mr-2"></i>Master Waktu Sesi (Jam Pelajaran)</h3>
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3" id="master-sesi-container">
-                    </div>
+            <label class="block text-xs font-bold text-gray-700 mb-1">Status Kehadiran</label>
+            <select id="input-status-halangan" class="w-full border rounded-lg p-2 mb-4 font-bold">
+                <option value="S">Sakit</option>
+                <option value="I">Izin / Udzur Syar'i</option>
+            </select>
+            
+            <label class="block text-xs font-bold text-gray-700 mb-1">Alasan Detail / Mapel yang Ditinggalkan</label>
+            <textarea id="input-alasan-halangan" rows="3" placeholder="Contoh: Izin mengantar istri periksa, Mapel Fiqih kosong." class="w-full border rounded-lg p-2 mb-4 text-sm"></textarea>
+            
+            <div class="flex gap-2">
+                <button onclick="tutupModalHalangan()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg">Batal</button>
+                <button onclick="kirimAbsenHalangan()" class="flex-[2] bg-red-600 text-white font-bold py-2 rounded-lg shadow-md">Kirim Status</button>
             </div>
-
-            <div class="flex items-center justify-between bg-indigo-600 text-white rounded-t-xl px-4 py-3 shadow-md no-print mt-8">
-                <button onclick="gantiTanggal(-1)" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded flex items-center transition-colors">
-                    <i class="fas fa-chevron-left mr-2"></i> <span class="text-sm font-medium">Sblm</span>
-                </button>
-                <div class="text-center">
-                    <p class="text-xs text-indigo-200 font-medium tracking-wider uppercase mb-0.5">TANGGAL AKTIF</p>
-                    <h2 class="text-lg font-bold" id="label-tanggal-aktif">Memuat...</h2>
-                </div>
-                <button onclick="gantiTanggal(1)" class="bg-indigo-700 hover:bg-indigo-800 px-3 py-1.5 rounded flex items-center transition-colors">
-                    <span class="text-sm font-medium">Brik</span> <i class="fas fa-chevron-right ml-2"></i>
-                </button>
-            </div>
-
-            <div id="waktu-tables-container"></div>
         </div>
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-        // Konfigurasi Firebase SAMA PERSIS dengan Aplikasi Master
         const firebaseConfig = {
             apiKey: "AIzaSyBvFNTZWlrLp_7aeCCVsKwKiagvHkplIR0",
             authDomain: "absensi-asatidzahattauhid.firebaseapp.com",
@@ -115,262 +129,389 @@
             messagingSenderId: "81697342613",
             appId: "1:81697342613:web:808cc73944fecdafc8879c"
         };
-
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // =========================================================
-        // PENGATURAN STATE GLOBAL
-        // =========================================================
-        let CURRENT_MONTH_KEY = ""; 
-        let JUMLAH_HARI = 31;
-        let TANGGAL_AKTIF = new Date().getDate(); // Otomatis mengarah ke tanggal hari ini saat dibuka
-        const TOTAL_SESI = 9; 
-        
-        const KELAS_LIST = [
-            { id: 'aly1', nama: 'Kelas Aly 1' }, { id: 'aly2', nama: 'Kelas Aly 2' },
-            { id: 'idad1', nama: 'Kelas Idad 1' }, { id: 'idad2', nama: 'Kelas Idad 2' }
-        ];
-
-        const MASTER_GURU = [
-            { id: 1, nama: "Ust. Ahmad Jamil", status: "Guru" }, { id: 2, nama: "Ust. Moch. Dahlan Sholeh", status: "Guru" },
-            { id: 3, nama: "Ust. Tsabit Al Aqdam", status: "Guru" }, { id: 4, nama: "Ust. Ahmad Syahirul", status: "Guru" },
-            { id: 5, nama: "Ust. Thoriq Ibrahim", status: "Guru" }, { id: 6, nama: "Ust. Muh. Salam Ramadhani", status: "Guru" },
-            { id: 7, nama: "Ust. Muh. Nur Romadhon", status: "Guru" }, { id: 8, nama: "Ust. Wisnu Ginanjar", status: "Guru" },
-            { id: 9, nama: "Ust. Salman Syah Khatami", status: "Guru" }, { id: 10, nama: "Ust. Muhammad", status: "Guru" },
-            { id: 11, nama: "Ust. Fahmi Amiruddin Mubarok", status: "Guru" }
-        ];
-
+        let loggedInGuruName = localStorage.getItem('AppGuru_Nama');
+        let KELAS_LIST = [];
+        let masterSesiData = {};
+        let jadwalMapelData = {};
+        let dataBulananApp = {}; 
         let waktuData = {}; 
-        
-        let masterSesiData = {
-            1: "07:30 - 08:15", 2: "08:15 - 09:00", 3: "09:00 - 09:45",
-            4: "10:00 - 10:45", 5: "10:45 - 11:30", 6: "13:00 - 13:45",
-            7: "13:45 - 14:30", 8: "16:00 - 16:45", 9: "16:45 - 17:30"
-        };
+        let isLate = false;
 
-        function createDefaultWaktu() {
-            let newWaktu = {};
-            KELAS_LIST.forEach(kls => { 
-                newWaktu[kls.id] = MASTER_GURU.map(g => ({ 
-                    id: g.id, 
-                    nama: g.nama, 
-                    hari: Array(31).fill(null).map(() => Array(TOTAL_SESI).fill("")) 
-                })); 
-            });
-            return newWaktu;
+        window.mintaIzinNotifikasi = function() {
+            if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
+                Notification.requestPermission();
+            }
         }
 
-        // =========================================================
-        // LOGIKA PEMILIH BULAN & TANGGAL
-        // =========================================================
-        const namaBulanArr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        async function pantauJadwalDanAutoAlpha(now) {
+            if(!waktuData || Object.keys(jadwalMapelData).length === 0) return;
+            
+            let currentMins = now.getHours() * 60 + now.getMinutes();
+            let hariIdx = now.getDay(); 
+            let idxArrayMapel = hariIdx === 0 ? 6 : hariIdx - 1; 
+            let tglIdx = now.getDate() - 1;
+            const bulanKey = now.toLocaleString('id-ID', { month: 'long' }) + '_' + now.getFullYear();
 
-        function initMonthSelector() {
-            const selector = document.getElementById('bulan-selector');
-            let html = '';
-            
-            let currentDate = new Date();
-            // Simpan tanggal asli agar tidak ke-reset ke tanggal 1 saat buka aplikasi pertama kali
-            let currentDay = currentDate.getDate(); 
-            currentDate.setDate(1); 
-            
-            const START_YEAR = 2025;
-            const START_MONTH = 5; // Juni
-            const startDate = new Date(START_YEAR, START_MONTH, 1);
-            
-            if (currentDate < startDate) {
-                currentDate = new Date(startDate.getTime());
-                TANGGAL_AKTIF = 1; // Jika dipaksa ke masa depan/lalu, reset tanggal
-            } else {
-                TANGGAL_AKTIF = currentDay; // Set ke tanggal aslinya (hari ini)
-            }
-            
-            while(currentDate >= startDate) {
-                let monthStr = namaBulanArr[currentDate.getMonth()];
-                let yearStr = currentDate.getFullYear();
+            let notifiedSesi = JSON.parse(localStorage.getItem('NotifSesi_' + now.getDate()) || '{}');
+            let alphaSesi = JSON.parse(localStorage.getItem('AlphaSesi_' + now.getDate()) || '{}');
+            let isDataChanged = false;
+
+            Object.keys(jadwalMapelData).forEach(klsId => {
+                let klsObj = KELAS_LIST.find(k => k.id === klsId);
+                if(!klsObj) return;
                 
-                let key = `${monthStr}_${yearStr}`;
-                let display = `${monthStr} ${yearStr}`;
-                
-                html += `<option value="${key}">${display}</option>`;
-                currentDate.setMonth(currentDate.getMonth() - 1); 
-            }
-            
-            selector.innerHTML = html;
-            CURRENT_MONTH_KEY = selector.value; 
-            
-            selector.addEventListener('change', (e) => {
-                CURRENT_MONTH_KEY = e.target.value;
-                TANGGAL_AKTIF = 1; // Jika manual ganti bulan, paksa mulai dari tgl 1
-                loadDataFromCloud();
-            });
-        }
+                let jadwalGuru = jadwalMapelData[klsId].find(g => g.nama === loggedInGuruName);
+                if(jadwalGuru && jadwalGuru.jadwalMapel && jadwalGuru.jadwalMapel[idxArrayMapel]) {
+                    
+                    let mapelRaw = jadwalGuru.jadwalMapel[idxArrayMapel]; 
+                    let mapelName = mapelRaw.replace(/\(Sesi.*?\)/i, '').trim() || "Pelajaran";
+                    let sesiMatch = mapelRaw.match(/Sesi\s*([\d\-,]+)/i);
+                    
+                    if(sesiMatch) {
+                        let sesisStr = sesiMatch[1];
+                        let targetSesis = [];
+                        if(sesisStr.includes('-')) {
+                            let p = sesisStr.split('-');
+                            for(let i=parseInt(p[0]); i<=parseInt(p[1]); i++) targetSesis.push(i);
+                        } else if(sesisStr.includes(',')) {
+                            targetSesis = sesisStr.split(',').map(s=>parseInt(s));
+                        } else { targetSesis.push(parseInt(sesisStr)); }
 
-        function updateDaysInMonth() {
-            let [b, y] = CURRENT_MONTH_KEY.split('_');
-            const mMap = {'Januari':0, 'Februari':1, 'Maret':2, 'April':3, 'Mei':4, 'Juni':5, 'Juli':6, 'Agustus':7, 'September':8, 'Oktober':9, 'November':10, 'Desember':11};
-            
-            JUMLAH_HARI = new Date(y, mMap[b] + 1, 0).getDate(); 
-            // Validasi supaya tidak bablas jika bulan berganti ke hari yg lebih sedikit (misal 31 ke 28)
-            if (TANGGAL_AKTIF > JUMLAH_HARI) TANGGAL_AKTIF = JUMLAH_HARI; 
-            updateLabelTanggal();
-        }
+                        let rIdx = -1;
+                        if(waktuData[klsId]) rIdx = waktuData[klsId].findIndex(g => g.nama === loggedInGuruName);
+                        if(rIdx === -1) return;
 
-        function updateLabelTanggal() {
-            let [b, y] = CURRENT_MONTH_KEY.split('_');
-            document.getElementById('label-tanggal-aktif').innerText = `${TANGGAL_AKTIF} ${b} ${y}`;
-        }
+                        targetSesis.forEach(sNum => {
+                            let waktuSesiStr = masterSesiData[klsObj.kategori] ? masterSesiData[klsObj.kategori][sNum] : null;
+                            if(waktuSesiStr && waktuSesiStr !== "0") {
+                                let [startH, startM] = waktuSesiStr.split('-')[0].split(':').map(Number);
+                                let [endH, endM] = waktuSesiStr.split('-')[1].split(':').map(Number);
+                                let startMins = startH*60 + startM;
+                                let endMins = endH*60 + endM;
 
-        window.gantiTanggal = function(step) {
-            let newVal = TANGGAL_AKTIF + step;
-            if (newVal >= 1 && newVal <= JUMLAH_HARI) {
-                TANGGAL_AKTIF = newVal;
-                updateLabelTanggal();
-                renderWaktuTables(); 
-            }
-        }
+                                let curAbsen = "";
+                                if(waktuData[klsId][rIdx].hari[tglIdx]) curAbsen = waktuData[klsId][rIdx].hari[tglIdx][sNum-1];
+                                let notifKey = `${klsId}_${sNum}`;
 
-        // =========================================================
-        // FUNGSI LOAD & SAVE DATA DATABASE
-        // =========================================================
-        async function loadDataFromCloud() {
-            document.getElementById('loader').style.display = 'flex';
-            
-            updateDaysInMonth();
+                                if (currentMins >= startMins + 15 && currentMins < endMins && !curAbsen && !notifiedSesi[notifKey]) {
+                                    if ("Notification" in window && Notification.permission === "granted") {
+                                        new Notification("Peringatan Kehadiran ⚠️", { body: `Assalamu'alaikum. Afwan, jadwal ${mapelName} sudah berlangsung 15 menit di Sesi ${sNum} ${klsObj.nama}. Tolong konfirmasi/absen.` });
+                                    } else {
+                                        alert(`Assalamu'alaikum. Afwan, jadwal ${mapelName} sudah berlangsung 15 menit di Sesi ${sNum} ${klsObj.nama}. Tolong kasih kabar.`);
+                                    }
+                                    notifiedSesi[notifKey] = true;
+                                    localStorage.setItem('NotifSesi_' + now.getDate(), JSON.stringify(notifiedSesi));
+                                }
 
-            // Hanya menarik data WaktuHadir dan MasterSesi (Lebih Hemat Kuota & Cepat!)
-            const PATH_WAKTU = `Rekap_V4/${CURRENT_MONTH_KEY}/WaktuHadir_HarianSesi`; 
-            const PATH_MASTER_SESI = `Settings/MasterSesi`;
+                                if (currentMins >= endMins && !curAbsen && !alphaSesi[notifKey]) {
+                                    if(!waktuData[klsId][rIdx].hari[tglIdx]) waktuData[klsId][rIdx].hari[tglIdx] = Array(9).fill("");
+                                    waktuData[klsId][rIdx].hari[tglIdx][sNum-1] = "A";
+                                    
+                                    if(dataBulananApp[klsId]) {
+                                        let rAppIdx = dataBulananApp[klsId].findIndex(g => g.nama === loggedInGuruName);
+                                        if(rAppIdx !== -1) {
+                                            if(!dataBulananApp[klsId][rAppIdx].data) dataBulananApp[klsId][rAppIdx].data = Array(31).fill("");
+                                            let noteSekarang = dataBulananApp[klsId][rAppIdx].catatan || "";
+                                            let catBaru = `Tgl ${now.getDate()}: Alpa Sesi ${sNum} (${mapelName}) - AutoSistem`;
+                                            if(!noteSekarang.includes(catBaru)) { dataBulananApp[klsId][rAppIdx].catatan = noteSekarang ? noteSekarang + "\n" + catBaru : catBaru; }
 
-            try {
-                const snapSesi = await get(ref(db, PATH_MASTER_SESI));
-                if(snapSesi.exists()) masterSesiData = snapSesi.val();
-                renderMasterSesiPanel();
-
-                const snapWaktu = await get(ref(db, PATH_WAKTU));
-                if(snapWaktu.exists()) waktuData = snapWaktu.val(); else waktuData = createDefaultWaktu();
-
-            } catch (error) {
-                console.error("Gagal terhubung ke Database:", error);
-                waktuData = createDefaultWaktu();
-                renderMasterSesiPanel();
-            }
-
-            renderWaktuTables();
-            document.getElementById('loader').style.display = 'none';
-        }
-
-        function saveWaktuData() { set(ref(db, `Rekap_V4/${CURRENT_MONTH_KEY}/WaktuHadir_HarianSesi`), waktuData); }
-        function saveMasterSesiData() { set(ref(db, `Settings/MasterSesi`), masterSesiData); }
-
-        // --- RENDER UI --- //
-        
-        function renderMasterSesiPanel() {
-            let html = '';
-            for(let i=1; i<=TOTAL_SESI; i++) {
-                let val = masterSesiData[i] || "";
-                html += `
-                <div class="flex items-center bg-white border border-gray-200 rounded-md p-1.5 shadow-sm">
-                    <span class="text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded mr-2">S${i}</span>
-                    <div class="text-xs text-gray-800 font-medium outline-none cursor-text w-full" contenteditable="true" onblur="handleMasterSesi(${i}, this)">${val}</div>
-                </div>`;
-            }
-            document.getElementById('master-sesi-container').innerHTML = html;
-        }
-
-        window.handleMasterSesi = function(sesiKe, el) {
-            let val = el.innerText.trim();
-            if(masterSesiData[sesiKe] !== val) {
-                masterSesiData[sesiKe] = val;
-                saveMasterSesiData();
-                renderWaktuTables(); 
-            }
-        }
-
-        function renderWaktuTables() {
-            let html = ''; let sesiHeaders = ''; 
-            
-            for(let i=1; i<=TOTAL_SESI; i++) {
-                let referensiWaktu = masterSesiData[i] || "-";
-                sesiHeaders += `<th class="border-b border-gray-200 bg-indigo-50 w-28 min-w-[100px] p-2 text-center border-r border-indigo-100">
-                    <div class="text-indigo-900 font-bold mb-1">SESI ${i}</div>
-                    <div class="text-[9px] font-normal text-indigo-500 bg-white rounded border border-indigo-100 inline-block px-1">${referensiWaktu}</div>
-                </th>`;
-            }
-            
-            let indexTanggalArray = TANGGAL_AKTIF - 1; 
-
-            KELAS_LIST.forEach(kls => {
-                html += `<div class="mb-8 bg-white shadow-sm border-x border-b border-gray-200 overflow-hidden last:rounded-b-xl">
-                    <div class="bg-indigo-50 px-4 py-3 border-b border-indigo-100 flex justify-between items-center">
-                        <h2 class="font-bold text-indigo-800 text-lg"><i class="fas fa-users text-indigo-600 mr-2"></i> ${kls.nama}</h2>
-                    </div>
-                    <div class="table-container-scroll">
-                        <table class="w-full text-left border-collapse spreadsheet-table min-w-max">
-                            <thead class="bg-gray-50 sticky top-0 z-20 shadow-sm">
-                                <tr>
-                                    <th class="sticky left-0 bg-gray-100 z-30 w-12 border-r-2">No</th>
-                                    <th class="col-name sticky left-12 bg-gray-100 z-30 border-r-2 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nama Asatidzah</th>
-                                    ${sesiHeaders}
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">`;
-                            
-                waktuData[kls.id].forEach((row, rIdx) => {
-                    let cellsHTML = '';
-                    for(let cIdx=0; cIdx<TOTAL_SESI; cIdx++) {
-                        let val = row.hari[indexTanggalArray][cIdx] || ""; 
-                        let cls = val ? 'bg-indigo-50 font-medium text-indigo-900 border-indigo-200' : 'border-gray-200'; 
-                        
-                        cellsHTML += `<td class="${cls} cursor-text hover:bg-indigo-100 outline-none focus:ring-2 focus:ring-indigo-400 text-xs border-r min-w-[100px] whitespace-normal" contenteditable="true" onblur="handleWaktuCell('${kls.id}', ${rIdx}, ${indexTanggalArray}, ${cIdx}, this)">${val}</td>`;
+                                            let allAlpha = true; let hasSesi = false;
+                                            targetSesis.forEach(ts => {
+                                                let sStr = masterSesiData[klsObj.kategori][ts];
+                                                if(sStr && sStr !== "0") { hasSesi = true; if(waktuData[klsId][rIdx].hari[tglIdx][ts-1] !== "A") allAlpha = false; }
+                                            });
+                                            if(allAlpha && hasSesi) dataBulananApp[klsId][rAppIdx].data[tglIdx] = "A";
+                                        }
+                                    }
+                                    alphaSesi[notifKey] = true;
+                                    localStorage.setItem('AlphaSesi_' + now.getDate(), JSON.stringify(alphaSesi));
+                                    isDataChanged = true;
+                                }
+                            }
+                        });
                     }
-                    html += `<tr class="hover:bg-gray-50 transition-colors group">
-                                <td class="bg-white border-r-2 sticky left-0 z-10 group-hover:bg-gray-50">${row.id}</td>
-                                <td class="col-name bg-white border-r-2 sticky left-12 z-10 font-bold text-gray-900 group-hover:bg-gray-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${row.nama}</td>
-                                ${cellsHTML}
-                             </tr>`;
-                });
-                html += `</tbody></table></div></div>`;
+                }
             });
-            document.getElementById('waktu-tables-container').innerHTML = html;
+
+            if(isDataChanged) {
+                await set(ref(db, `Rekap_V4/${bulanKey}/WaktuHadir_HarianSesi`), waktuData);
+                await set(ref(db, `Rekap_V4/${bulanKey}/DataHarian`), dataBulananApp);
+            }
         }
 
-        window.handleWaktuCell = function(kelasId, guruIndex, tglIndex, sesiIndex, el) {
-            let val = el.innerText.trim();
-            if(waktuData[kelasId][guruIndex].hari[tglIndex][sesiIndex] !== val) { 
-                waktuData[kelasId][guruIndex].hari[tglIndex][sesiIndex] = val; 
-                saveWaktuData(); 
-                if(val) el.classList.add('bg-indigo-50', 'font-medium', 'text-indigo-900', 'border-indigo-200'); 
+        function startClock() {
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('digital-clock').innerHTML = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                
+                const hariArr = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const bulanArr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                document.getElementById('display-tanggal').innerText = `${hariArr[now.getDay()]}, ${now.getDate()} ${bulanArr[now.getMonth()]} ${now.getFullYear()}`;
+                
+                if(loggedInGuruName && document.getElementById('app-view').classList.contains('hidden-section') === false) {
+                    updateDropdownSesi();
+                    pantauJadwalDanAutoAlpha(now);
+                }
+            }, 1000);
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            startClock();
+            try {
+                const snapKelas = await get(ref(db, `Settings/KelasList`));
+                if(snapKelas.exists()) KELAS_LIST = snapKelas.val();
+                
+                const snapGuru = await get(ref(db, `Settings/MasterGuruPerKelas`));
+                if(snapGuru.exists()) {
+                    let allGurus = [];
+                    let rawGuru = snapGuru.val();
+                    KELAS_LIST.forEach(k => {
+                        if(rawGuru[k.id]) {
+                            rawGuru[k.id].forEach(g => { if(!allGurus.includes(g.nama)) allGurus.push(g.nama); });
+                        }
+                    });
+                    const selector = document.getElementById('guru-selector');
+                    selector.innerHTML = `<option value="" disabled selected>-- Pilih Nama Anda --</option>`;
+                    allGurus.forEach(nama => selector.innerHTML += `<option value="${nama}">${nama}</option>`);
+                }
+            } catch(e) {}
+
+            if (loggedInGuruName) { tampilkanDashboard(loggedInGuruName); } 
+            else { document.getElementById('loader').classList.add('hidden-section'); document.getElementById('login-view').classList.remove('hidden-section'); }
+        });
+
+        window.loginGuru = function() {
+            const nama = document.getElementById('guru-selector').value;
+            if (!nama) { alert("Tafadhol, pilih nama Anda."); return; }
+            localStorage.setItem('AppGuru_Nama', nama); loggedInGuruName = nama;
+            window.mintaIzinNotifikasi();
+            document.getElementById('login-view').classList.add('hidden-section');
+            tampilkanDashboard(nama);
+        }
+
+        window.logoutGuru = function() {
+            if(confirm("Keluar dari akun?")) {
+                localStorage.removeItem('AppGuru_Nama'); loggedInGuruName = null;
+                document.getElementById('app-view').classList.add('hidden-section');
+                document.getElementById('login-view').classList.remove('hidden-section');
+            }
+        }
+
+        async function tampilkanDashboard(namaGuru) {
+            document.getElementById('loader').classList.remove('hidden-section');
+            document.getElementById('display-nama').innerText = namaGuru;
+
+            const dt = new Date();
+            const bulanKey = dt.toLocaleString('id-ID', { month: 'long' }) + '_' + dt.getFullYear();
+            const tglAktif = dt.getDate();
+            
+            try {
+                const snapSesi = await get(ref(db, `Rekap_V4/${bulanKey}/HistorySesi/${tglAktif}`));
+                if(snapSesi.exists()) masterSesiData = snapSesi.val();
                 else {
-                    el.classList.remove('bg-indigo-50', 'font-medium', 'text-indigo-900', 'border-indigo-200'); 
-                    el.classList.add('border-gray-200');
+                    const snapG = await get(ref(db, `Settings/MasterSesiGlobal`));
+                    masterSesiData = snapG.exists() ? snapG.val() : { aly: {}, idad: {}, mutawassitoh: {} };
+                }
+
+                const snapJadwal = await get(ref(db, `Rekap_V4/${bulanKey}/HistoryJadwalMapel/${tglAktif}`));
+                if(snapJadwal.exists()) jadwalMapelData = snapJadwal.val();
+
+                const snapW = await get(ref(db, `Rekap_V4/${bulanKey}/WaktuHadir_HarianSesi`));
+                if(snapW.exists()) waktuData = snapW.val();
+                
+                const snapApp = await get(ref(db, `Rekap_V4/${bulanKey}/DataHarian`));
+                if(snapApp.exists()) dataBulananApp = snapApp.val();
+
+                // SETUP KELAS DINAMIS
+                let hariIdx = new Date().getDay(); 
+                let idxArrayMapel = hariIdx === 0 ? 6 : hariIdx - 1; 
+                let optKelas = ''; let info = []; let kelasAktifCount = 0;
+
+                Object.keys(jadwalMapelData).forEach(klsId => {
+                    let klsObj = KELAS_LIST.find(k => k.id === klsId);
+                    let jadwalGuruDiKelasIni = jadwalMapelData[klsId].find(g => g.nama === namaGuru);
+                    if(jadwalGuruDiKelasIni && jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel] && jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel].trim() !== "") {
+                        info.push(`<b>${klsObj.nama}:</b> ${jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel]}`);
+                        optKelas += `<option value="${klsId}">${klsObj.nama}</option>`;
+                        kelasAktifCount++;
+                    }
+                });
+
+                document.getElementById('info-jadwal-mapel').innerHTML = info.length > 0 ? info.join('<br>') : '<span class="text-gray-400 font-normal">Tidak ada jadwal mengajar hari ini.</span>';
+                
+                const btnUtama = document.getElementById('btn-absen-utama');
+                if(kelasAktifCount > 0) {
+                    document.getElementById('input-kelas').innerHTML = optKelas;
+                    document.getElementById('input-kelas').disabled = false;
+                    btnUtama.disabled = false; btnUtama.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    document.getElementById('input-kelas').innerHTML = '<option value="" disabled selected>Tidak ada jadwal kelas</option>';
+                    document.getElementById('input-kelas').disabled = true;
+                    btnUtama.disabled = true; btnUtama.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+
+                updateDropdownSesi();
+
+            } catch (e) { console.error(e); }
+
+            document.getElementById('loader').classList.add('hidden-section');
+            document.getElementById('app-view').classList.remove('hidden-section');
+        }
+
+        window.updateDropdownSesi = function() {
+            const kelasId = document.getElementById('input-kelas').value;
+            if(!kelasId) { document.getElementById('input-sesi').innerHTML = '<option value="">-</option>'; return; }
+
+            const klsObj = KELAS_LIST.find(k => k.id === kelasId);
+            const kategori = klsObj ? klsObj.kategori : 'aly'; 
+            const opsiWaktuSesi = masterSesiData[kategori] || {};
+            
+            const now = new Date();
+            const currentMins = now.getHours() * 60 + now.getMinutes();
+            
+            let sesiTerpilih = -1;
+            let htmlSesi = '';
+            isLate = false;
+
+            for(let i=1; i<=9; i++) {
+                let textWaktu = opsiWaktuSesi[i];
+                if(textWaktu && textWaktu !== "0") {
+                    htmlSesi += `<option value="${i-1}">Sesi ${i} (${textWaktu})</option>`;
+                    let parts = textWaktu.split('-');
+                    if(parts.length === 2) {
+                        let startParts = parts[0].trim().split(':'); let endParts = parts[1].trim().split(':');
+                        let startMins = parseInt(startParts[0])*60 + parseInt(startParts[1]);
+                        let endMins = parseInt(endParts[0])*60 + parseInt(endParts[1]);
+                        if (currentMins <= endMins && sesiTerpilih === -1) {
+                            sesiTerpilih = i-1;
+                            if (currentMins > startMins + 5) isLate = true;
+                        }
+                    }
                 }
             }
+
+            const selectEl = document.getElementById('input-sesi');
+            selectEl.innerHTML = htmlSesi || '<option value="0">Data sesi kosong</option>';
+            if(sesiTerpilih !== -1) selectEl.value = sesiTerpilih;
+
+            const wadahTelat = document.getElementById('wadah-telat');
+            const statusTelat = document.getElementById('status-telat');
+            
+            if(isLate) {
+                wadahTelat.classList.remove('hidden-section');
+                statusTelat.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-exclamation-circle"></i> Jam masuk telah lewat batas toleransi 5 menit.</span>`;
+            } else {
+                wadahTelat.classList.add('hidden-section');
+                statusTelat.innerHTML = `<i class="fas fa-robot"></i> Sistem otomatis memilih sesi terdekat.`;
+            }
         }
 
-        window.exportToPDF = function() { window.print(); }
-        
-        window.addEventListener('DOMContentLoaded', () => {
-            initMonthSelector(); 
-            loadDataFromCloud();
-        });
-    </script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('Sistem Lite Terdaftar!'))
-                    .catch(err => console.log('Gagal daftar:', err));
-            });
+        window.kirimAbsenHadir = async function() {
+            const kelasId = document.getElementById('input-kelas').value;
+            const sesiIdx = parseInt(document.getElementById('input-sesi').value);
+            const dt = new Date();
+            const bulanKey = dt.toLocaleString('id-ID', { month: 'long' }) + '_' + dt.getFullYear();
+            const tglIdx = dt.getDate() - 1; 
+            const jamSekarang = dt.getHours().toString().padStart(2, '0') + ":" + dt.getMinutes().toString().padStart(2, '0');
 
-            // Trik Rahasia 3: Auto-Refresh layar kalau ada update dari sw.js
-            let refreshing;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (refreshing) return;
-                window.location.reload();
-                refreshing = true;
-            });
+            let alasanTelat = "";
+            if (isLate) {
+                alasanTelat = document.getElementById('input-alasan-telat').value.trim();
+                if(!alasanTelat) { alert("Anda terlambat! Mohon isi alasan keterlambatan pada kotak yang disediakan."); return; }
+            }
+
+            let rIdx = -1;
+            if(waktuData[kelasId]) { rIdx = waktuData[kelasId].findIndex(g => g.nama === loggedInGuruName); }
+            if(rIdx === -1) { alert("Nama Anda belum terdaftar di absen kelas ini untuk bulan ini."); return; }
+
+            if(!waktuData[kelasId][rIdx].hari[tglIdx]) waktuData[kelasId][rIdx].hari[tglIdx] = Array(9).fill("");
+            waktuData[kelasId][rIdx].hari[tglIdx][sesiIdx] = jamSekarang;
+
+            if (isLate && dataBulananApp[kelasId]) {
+                let rAppIdx = dataBulananApp[kelasId].findIndex(g => g.nama === loggedInGuruName);
+                if(rAppIdx !== -1) {
+                    let noteSekarang = dataBulananApp[kelasId][rAppIdx].catatan || "";
+                    let catBaru = `Tgl ${dt.getDate()}: Terlambat Sesi ${sesiIdx+1} (${alasanTelat})`;
+                    dataBulananApp[kelasId][rAppIdx].catatan = noteSekarang ? noteSekarang + "\n" + catBaru : catBaru;
+                }
+            }
+
+            const btn = document.getElementById('btn-absen-utama');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin text-2xl"></i> MENGIRIM...`; btn.disabled = true;
+
+            try {
+                await set(ref(db, `Rekap_V4/${bulanKey}/WaktuHadir_HarianSesi`), waktuData);
+                if(isLate) await set(ref(db, `Rekap_V4/${bulanKey}/DataHarian`), dataBulananApp);
+
+                btn.classList.replace('bg-indigo-600', 'bg-emerald-500');
+                btn.innerHTML = `<i class="fas fa-check-circle text-2xl"></i> TEREKAM MASUK: ${jamSekarang}`;
+                if(isLate) document.getElementById('input-alasan-telat').value = "";
+
+                setTimeout(() => { btn.classList.replace('bg-emerald-500', 'bg-indigo-600'); btn.innerHTML = originalHTML; btn.disabled = false; }, 3000);
+            } catch (error) { alert("Gagal merekam! Cek koneksi internet."); btn.innerHTML = originalHTML; btn.disabled = false; }
+        }
+
+        window.kirimAbsenKeluar = async function() {
+            const kelasId = document.getElementById('input-kelas').value;
+            const sesiIdx = parseInt(document.getElementById('input-sesi').value);
+            const dt = new Date();
+            const bulanKey = dt.toLocaleString('id-ID', { month: 'long' }) + '_' + dt.getFullYear();
+            const tglIdx = dt.getDate() - 1; 
+            const jamSekarang = dt.getHours().toString().padStart(2, '0') + ":" + dt.getMinutes().toString().padStart(2, '0');
+
+            let rIdx = -1;
+            if(waktuData[kelasId]) { rIdx = waktuData[kelasId].findIndex(g => g.nama === loggedInGuruName); }
+            if(rIdx === -1) { alert("Nama Anda belum terdaftar di kelas ini."); return; }
+
+            if(!waktuData[kelasId][rIdx].hari[tglIdx]) waktuData[kelasId][rIdx].hari[tglIdx] = Array(9).fill("");
+            
+            let currentVal = waktuData[kelasId][rIdx].hari[tglIdx][sesiIdx] || "";
+            if(!currentVal.includes("-")) {
+                waktuData[kelasId][rIdx].hari[tglIdx][sesiIdx] = (currentVal ? currentVal + " - " : "??:?? - ") + jamSekarang;
+            }
+
+            try {
+                await set(ref(db, `Rekap_V4/${bulanKey}/WaktuHadir_HarianSesi`), waktuData);
+                alert(`Jam Keluar (${jamSekarang}) Berhasil Direkam!`);
+            } catch (error) { alert("Gagal merekam!"); }
+        }
+
+        window.bukaModalHalangan = function() { document.getElementById('modal-halangan').classList.remove('hidden-section'); }
+        window.tutupModalHalangan = function() { document.getElementById('modal-halangan').classList.add('hidden-section'); document.getElementById('input-alasan-halangan').value = ""; }
+
+        window.kirimAbsenHalangan = async function() {
+            const kelasId = document.getElementById('input-kelas').value;
+            if(!kelasId) { alert("Tidak ada kelas aktif."); return; }
+            const status = document.getElementById('input-status-halangan').value; 
+            const alasan = document.getElementById('input-alasan-halangan').value.trim();
+            if(!alasan) { alert("Mohon tuliskan detail alasannya agar Admin bisa mencatat dengan benar."); return; }
+
+            const dt = new Date();
+            const bulanKey = dt.toLocaleString('id-ID', { month: 'long' }) + '_' + dt.getFullYear();
+            const tglIdx = dt.getDate() - 1; 
+
+            if (dataBulananApp[kelasId]) {
+                let rAppIdx = dataBulananApp[kelasId].findIndex(g => g.nama === loggedInGuruName);
+                if(rAppIdx !== -1) {
+                    if(!dataBulananApp[kelasId][rAppIdx].data) dataBulananApp[kelasId][rAppIdx].data = Array(31).fill("");
+                    dataBulananApp[kelasId][rAppIdx].data[tglIdx] = status;
+
+                    let noteSekarang = dataBulananApp[kelasId][rAppIdx].catatan || "";
+                    let jenisTxt = status === 'S' ? 'Sakit' : 'Izin';
+                    let catBaru = `Tgl ${dt.getDate()}: ${jenisTxt} - ${alasan}`;
+                    dataBulananApp[kelasId][rAppIdx].catatan = noteSekarang ? noteSekarang + "\n" + catBaru : catBaru;
+                }
+            }
+
+            try {
+                await set(ref(db, `Rekap_V4/${bulanKey}/DataHarian`), dataBulananApp);
+                alert(`Status ${status === 'S' ? 'Sakit' : 'Izin'} berhasil dikirim ke Admin!`);
+                tutupModalHalangan();
+            } catch (error) { alert("Gagal mengirim status. Cek internet Anda."); }
         }
     </script>
 </body>
