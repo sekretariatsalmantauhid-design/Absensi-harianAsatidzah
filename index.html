@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Absensi Pintar Asatidzah</title>
-    <meta name="theme-color" content="#4f46e5">
+    <meta name="theme-color" content="#1e1b4b">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -14,72 +14,93 @@
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .btn-absen { transition: all 0.1s; }
         .btn-absen:active { transform: translateY(4px); }
+        
+        /* Modal Custom Styling */
+        .modal-overlay { backdrop-filter: blur(4px); }
     </style>
 </head>
 <body class="text-gray-800 antialiased min-h-screen flex flex-col items-center justify-center relative p-4">
 
     <div id="loader" class="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center fade-in">
-        <i class="fas fa-circle-notch fa-spin text-indigo-600 text-5xl mb-4"></i>
+        <i class="fas fa-circle-notch fa-spin text-indigo-900 text-5xl mb-4"></i>
         <p class="text-indigo-900 font-bold tracking-widest uppercase text-sm animate-pulse">Menyelaraskan Data...</p>
     </div>
 
-    <div id="login-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden hidden-section fade-in">
-        <div class="bg-indigo-600 p-8 text-center">
-            <h1 class="text-2xl font-black text-white">Ahlan Wa Sahlan</h1>
-            <p class="text-indigo-200 text-sm font-medium mt-1">Sistem Absensi Harian Asatidzah</p>
+    <div id="login-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden hidden-section fade-in border border-gray-100">
+        <div class="bg-gradient-to-br from-gray-900 to-indigo-900 p-8 text-center relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 opacity-10 text-9xl"><i class="fas fa-fingerprint"></i></div>
+            <h1 class="text-2xl font-black text-white relative z-10">Ahlan Wa Sahlan</h1>
+            <p class="text-indigo-200 text-sm font-medium mt-1 relative z-10">Sistem Absensi Harian Asatidzah</p>
         </div>
         <div class="p-8">
             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">Pilih Identitas Anda</label>
-            <select id="guru-selector" class="w-full bg-gray-50 border-2 border-gray-200 text-gray-800 font-bold rounded-xl p-4 mb-6 outline-none">
-                <option value="" disabled selected>-- Sedang memuat nama... --</option>
-            </select>
-            <button onclick="loginGuru()" class="w-full bg-indigo-600 text-white font-bold text-lg py-4 rounded-xl shadow-lg">Masuk Aplikasi</button>
+            <div class="relative mb-6">
+                <select id="guru-selector" class="w-full appearance-none bg-gray-50 border-2 border-gray-200 text-gray-800 font-bold rounded-xl pl-4 pr-10 py-4 focus:outline-none focus:ring-0 focus:border-indigo-500 transition-colors cursor-pointer text-base">
+                    <option value="" disabled selected>-- Sedang memuat nama... --</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500"><i class="fas fa-chevron-down"></i></div>
+            </div>
+            
+            <button onclick="loginGuru()" class="w-full bg-gradient-to-r from-gray-900 to-indigo-900 hover:from-black hover:to-indigo-950 text-white font-bold text-lg py-4 rounded-xl shadow-lg transition-colors flex items-center justify-center gap-2">
+                Masuk Aplikasi <i class="fas fa-arrow-right text-sm"></i>
+            </button>
         </div>
     </div>
 
     <div id="app-view" class="w-full max-w-md flex flex-col h-[95vh] hidden-section fade-in">
+        
         <div class="flex justify-between items-center bg-white rounded-2xl p-4 shadow-sm mb-4 shrink-0 border border-gray-100">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center font-bold text-lg"><i class="fas fa-user"></i></div>
-                <div><p class="text-[10px] text-gray-500 font-bold uppercase">Asatidzah Aktif</p><p class="font-bold text-gray-900" id="display-nama">Ust. Nama</p></div>
+                <div class="w-10 h-10 bg-indigo-50 text-indigo-900 rounded-full flex items-center justify-center font-bold text-lg"><i class="fas fa-user-tie"></i></div>
+                <div>
+                    <p class="text-[9px] text-gray-500 font-bold uppercase tracking-wider">Asatidzah Aktif</p>
+                    <p class="font-bold text-gray-900 text-sm leading-tight" id="display-nama">Ust. Nama</p>
+                </div>
             </div>
-            <button onclick="logoutGuru()" class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center"><i class="fas fa-sign-out-alt"></i></button>
+            <button onclick="logoutGuru()" class="w-10 h-10 bg-red-50 text-red-500 rounded-full flex items-center justify-center hover:bg-red-100 transition-colors" title="Keluar"><i class="fas fa-sign-out-alt"></i></button>
         </div>
 
-        <div class="bg-gradient-to-br from-gray-900 to-indigo-900 rounded-3xl p-6 shadow-xl text-center mb-4 shrink-0">
-            <p class="text-indigo-200 font-medium text-sm tracking-widest uppercase mb-1" id="display-tanggal">Senin, 1 Jan 2026</p>
-            <h2 class="text-6xl font-black text-white tracking-tight" id="digital-clock">00:00</h2>
+        <div class="bg-gradient-to-br from-gray-900 to-indigo-900 rounded-3xl p-6 shadow-xl text-center mb-4 shrink-0 relative overflow-hidden">
+            <div class="absolute opacity-5 text-8xl -top-4 -left-4"><i class="fas fa-clock"></i></div>
+            <p class="text-indigo-200 font-medium text-xs tracking-widest uppercase mb-1 relative z-10" id="display-tanggal">Senin, 1 Jan 2026</p>
+            <h2 class="text-6xl font-black text-white tracking-tight relative z-10" id="digital-clock">00:00<span class="text-2xl text-indigo-300 font-normal">WIB</span></h2>
         </div>
 
         <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-4 shrink-0 text-center">
             <p class="text-[10px] text-blue-500 font-bold uppercase tracking-wider mb-1"><i class="fas fa-calendar-week"></i> Jadwal Mengajar Hari Ini</p>
-            <p class="text-blue-900 font-bold text-sm" id="info-jadwal-mapel">Memeriksa jadwal di server...</p>
+            <p class="text-blue-900 font-bold text-sm leading-relaxed" id="info-jadwal-mapel">Memeriksa jadwal di server...</p>
         </div>
 
-        <div class="bg-white rounded-3xl shadow-md border border-gray-100 p-6 flex-1 flex flex-col overflow-y-auto">
-            <h3 class="font-bold text-gray-800 text-lg mb-4 border-b pb-2">Form Kehadiran</h3>
+        <div class="bg-white rounded-3xl shadow-md border border-gray-100 p-6 flex-1 flex flex-col overflow-y-auto relative">
+            <h3 class="font-bold text-gray-800 text-lg mb-4 border-b pb-2"><i class="fas fa-edit text-indigo-500 mr-2"></i> Form Kehadiran</h3>
             
             <div class="space-y-4 mb-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">1. Mengajar di Kelas</label>
-                    <select id="input-kelas" onchange="updateDropdownSesi()" class="w-full bg-gray-50 border border-gray-200 font-bold rounded-xl p-3 outline-none cursor-pointer">
-                    </select>
+                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">1. Mengajar di Kelas</label>
+                    <div class="relative">
+                        <select id="input-kelas" onchange="updateDropdownSesi()" class="w-full appearance-none bg-gray-50 border border-gray-200 font-bold text-gray-800 rounded-xl pl-4 pr-10 py-3 outline-none cursor-pointer">
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400"><i class="fas fa-chevron-down text-sm"></i></div>
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 mb-1">2. Sesi Ke (Auto-Deteksi Jam)</label>
-                    <select id="input-sesi" class="w-full bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold rounded-xl p-3 outline-none pointer-events-none appearance-none">
-                    </select>
-                    <p class="text-[10px] text-indigo-500 mt-1 italic" id="status-telat"><i class="fas fa-robot"></i> Sistem otomatis memilih sesi sesuai jam saat ini.</p>
+                    <label class="block text-xs font-bold text-gray-500 mb-1.5 uppercase">2. Sesi Ke (Auto-Deteksi Jam)</label>
+                    <div class="relative">
+                        <select id="input-sesi" class="w-full appearance-none bg-indigo-50 border border-indigo-200 text-indigo-900 font-bold rounded-xl pl-4 pr-10 py-3 outline-none pointer-events-none">
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-indigo-400"><i class="fas fa-lock text-sm"></i></div>
+                    </div>
+                    <p class="text-[10px] text-indigo-500 mt-1.5 font-medium" id="status-telat"><i class="fas fa-robot mr-1"></i> Sistem otomatis memilih sesi sesuai jam saat ini.</p>
                 </div>
                 
-                <div id="wadah-telat" class="hidden-section bg-orange-50 border border-orange-200 p-3 rounded-xl">
-                    <label class="block text-xs font-bold text-orange-700 mb-1"><i class="fas fa-exclamation-triangle"></i> Anda Terlambat! Mohon tulis alasan:</label>
-                    <input type="text" id="input-alasan-telat" placeholder="Misal: Ban bocor, hujan lebat..." class="w-full bg-white border border-orange-300 text-sm rounded-lg p-2 outline-none focus:ring-orange-500">
+                <div id="wadah-telat" class="hidden-section bg-orange-50 border border-orange-200 p-4 rounded-xl">
+                    <label class="block text-xs font-bold text-orange-700 mb-2 uppercase"><i class="fas fa-exclamation-triangle mr-1"></i> Anda Terlambat! Mohon tulis alasan:</label>
+                    <input type="text" id="input-alasan-telat" placeholder="Misal: Ban bocor, hujan lebat..." class="w-full bg-white border border-orange-300 text-sm font-medium rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-orange-500">
                 </div>
             </div>
 
-            <div class="mt-auto space-y-3">
-                <button id="btn-absen-utama" onclick="kirimAbsenHadir()" class="btn-absen w-full bg-indigo-600 text-white font-black text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
+            <div class="mt-auto space-y-3 pt-2">
+                <button id="btn-absen-utama" onclick="kirimAbsenHadir()" class="btn-absen w-full bg-gradient-to-r from-gray-900 to-indigo-900 hover:from-black hover:to-indigo-950 text-white font-black text-lg py-4 rounded-xl shadow-lg flex items-center justify-center gap-2">
                     <i class="fas fa-fingerprint text-2xl"></i> REKAM JAM MASUK
                 </button>
                 
@@ -87,7 +108,7 @@
                     <button onclick="bukaModalHalangan()" class="flex-1 bg-red-50 text-red-600 font-bold py-3 rounded-xl border border-red-100 hover:bg-red-100 transition-colors text-sm">
                         <i class="fas fa-briefcase-medical mr-1"></i> Sakit/Udzur
                     </button>
-                    <button onclick="kirimAbsenKeluar()" class="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl border border-gray-200 hover:bg-gray-200 transition-colors text-sm">
+                    <button onclick="kirimAbsenKeluar()" class="flex-1 bg-gray-50 text-gray-600 font-bold py-3 rounded-xl border border-gray-200 hover:bg-gray-100 transition-colors text-sm">
                         Jam Keluar <i class="fas fa-sign-out-alt ml-1"></i>
                     </button>
                 </div>
@@ -95,23 +116,29 @@
         </div>
     </div>
 
-    <div id="modal-halangan" class="absolute inset-0 bg-black/60 z-50 flex items-center justify-center p-4 hidden-section fade-in">
-        <div class="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl">
-            <h3 class="text-xl font-bold text-red-600 mb-2"><i class="fas fa-notes-medical"></i> Form Izin / Sakit</h3>
-            <p class="text-xs text-gray-500 mb-4">Data ini akan otomatis tercatat sebagai (S) atau (I) di rekap bulanan Admin.</p>
+    <div id="modal-halangan" class="absolute inset-0 bg-black/60 modal-overlay z-50 flex items-center justify-center p-4 hidden-section fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xl"><i class="fas fa-notes-medical"></i></div>
+                <h3 class="text-xl font-black text-gray-900">Form Sakit/Izin</h3>
+            </div>
+            <p class="text-[11px] text-gray-500 mb-5 font-medium leading-relaxed border-b pb-3">Data ini akan otomatis tercatat sebagai (S) atau (I) dan dikirim ke Admin.</p>
             
-            <label class="block text-xs font-bold text-gray-700 mb-1">Status Kehadiran</label>
-            <select id="input-status-halangan" class="w-full border rounded-lg p-2 mb-4 font-bold">
-                <option value="S">Sakit</option>
-                <option value="I">Izin / Udzur Syar'i</option>
-            </select>
+            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">Status Kehadiran</label>
+            <div class="relative mb-4">
+                <select id="input-status-halangan" class="w-full appearance-none bg-gray-50 border border-gray-300 rounded-lg pl-3 pr-8 py-2.5 font-bold outline-none cursor-pointer focus:border-red-500">
+                    <option value="S">Sakit</option>
+                    <option value="I">Izin / Udzur Syar'i</option>
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"><i class="fas fa-chevron-down text-xs"></i></div>
+            </div>
             
-            <label class="block text-xs font-bold text-gray-700 mb-1">Alasan Detail / Mapel yang Ditinggalkan</label>
-            <textarea id="input-alasan-halangan" rows="3" placeholder="Contoh: Izin mengantar istri periksa, Mapel Fiqih kosong." class="w-full border rounded-lg p-2 mb-4 text-sm"></textarea>
+            <label class="block text-xs font-bold text-gray-700 mb-1.5 uppercase">Detail Alasan (Opsional)</label>
+            <textarea id="input-alasan-halangan" rows="3" placeholder="Contoh: Mengantar istri ke Rumah Sakit..." class="w-full bg-gray-50 border border-gray-300 rounded-lg p-3 mb-5 text-sm outline-none focus:ring-1 focus:ring-red-500 focus:bg-white transition-colors"></textarea>
             
             <div class="flex gap-2">
-                <button onclick="tutupModalHalangan()" class="flex-1 bg-gray-200 text-gray-700 font-bold py-2 rounded-lg">Batal</button>
-                <button onclick="kirimAbsenHalangan()" class="flex-[2] bg-red-600 text-white font-bold py-2 rounded-lg shadow-md">Kirim Status</button>
+                <button onclick="tutupModalHalangan()" class="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors">Batal</button>
+                <button onclick="kirimAbsenHalangan()" class="flex-[2] bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl shadow-md transition-colors flex items-center justify-center gap-2"><i class="fas fa-paper-plane"></i> Kirim Status</button>
             </div>
         </div>
     </div>
@@ -120,6 +147,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+        // Konfigurasi Database Bos
         const firebaseConfig = {
             apiKey: "AIzaSyBvFNTZWlrLp_7aeCCVsKwKiagvHkplIR0",
             authDomain: "absensi-asatidzahattauhid.firebaseapp.com",
@@ -132,6 +160,7 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
+        // Variabel Global
         let loggedInGuruName = localStorage.getItem('AppGuru_Nama');
         let KELAS_LIST = [];
         let masterSesiData = {};
@@ -140,12 +169,16 @@
         let waktuData = {}; 
         let isLate = false;
 
+        // FUNGSI NOTIFIKASI
         window.mintaIzinNotifikasi = function() {
             if ("Notification" in window && Notification.permission !== "granted" && Notification.permission !== "denied") {
                 Notification.requestPermission();
             }
         }
 
+        // =========================================================
+        // KECERDASAN BUATAN: ROBOT PEMANTAU JADWAL & AUTO-ALPHA
+        // =========================================================
         async function pantauJadwalDanAutoAlpha(now) {
             if(!waktuData || Object.keys(jadwalMapelData).length === 0) return;
             
@@ -168,17 +201,16 @@
                     
                     let mapelRaw = jadwalGuru.jadwalMapel[idxArrayMapel]; 
                     let mapelName = mapelRaw.replace(/\(Sesi.*?\)/i, '').trim() || "Pelajaran";
-                    let sesiMatch = mapelRaw.match(/Sesi\s*([\d\-,]+)/i);
+                    let matches = mapelRaw.match(/Sesi\s*([\d\-,]+)/gi);
                     
-                    if(sesiMatch) {
-                        let sesisStr = sesiMatch[1];
+                    if(matches) {
                         let targetSesis = [];
-                        if(sesisStr.includes('-')) {
-                            let p = sesisStr.split('-');
-                            for(let i=parseInt(p[0]); i<=parseInt(p[1]); i++) targetSesis.push(i);
-                        } else if(sesisStr.includes(',')) {
-                            targetSesis = sesisStr.split(',').map(s=>parseInt(s));
-                        } else { targetSesis.push(parseInt(sesisStr)); }
+                        matches.forEach(m => {
+                            let s = m.replace(/Sesi\s*/i, '').trim();
+                            if(s.includes('-')) { let p = s.split('-'); for(let i=parseInt(p[0]); i<=parseInt(p[1]); i++) targetSesis.push(i); }
+                            else if(s.includes(',')) { targetSesis.push(...s.split(',').map(Number)); }
+                            else { targetSesis.push(parseInt(s)); }
+                        });
 
                         let rIdx = -1;
                         if(waktuData[klsId]) rIdx = waktuData[klsId].findIndex(g => g.nama === loggedInGuruName);
@@ -189,8 +221,7 @@
                             if(waktuSesiStr && waktuSesiStr !== "0") {
                                 let [startH, startM] = waktuSesiStr.split('-')[0].split(':').map(Number);
                                 let [endH, endM] = waktuSesiStr.split('-')[1].split(':').map(Number);
-                                let startMins = startH*60 + startM;
-                                let endMins = endH*60 + endM;
+                                let startMins = startH*60 + startM; let endMins = endH*60 + endM;
 
                                 let curAbsen = "";
                                 if(waktuData[klsId][rIdx].hari[tglIdx]) curAbsen = waktuData[klsId][rIdx].hari[tglIdx][sNum-1];
@@ -198,12 +229,11 @@
 
                                 if (currentMins >= startMins + 15 && currentMins < endMins && !curAbsen && !notifiedSesi[notifKey]) {
                                     if ("Notification" in window && Notification.permission === "granted") {
-                                        new Notification("Peringatan Kehadiran ⚠️", { body: `Assalamu'alaikum. Afwan, jadwal ${mapelName} sudah berlangsung 15 menit di Sesi ${sNum} ${klsObj.nama}. Tolong konfirmasi/absen.` });
+                                        new Notification("Peringatan Kehadiran ⚠️", { body: `Assalamu'alaikum. Afwan, jadwal ${mapelName} sudah berlangsung 15 menit di Sesi ${sNum} ${klsObj.nama}. Tolong konfirmasi absen di Aplikasi.` });
                                     } else {
                                         alert(`Assalamu'alaikum. Afwan, jadwal ${mapelName} sudah berlangsung 15 menit di Sesi ${sNum} ${klsObj.nama}. Tolong kasih kabar.`);
                                     }
-                                    notifiedSesi[notifKey] = true;
-                                    localStorage.setItem('NotifSesi_' + now.getDate(), JSON.stringify(notifiedSesi));
+                                    notifiedSesi[notifKey] = true; localStorage.setItem('NotifSesi_' + now.getDate(), JSON.stringify(notifiedSesi));
                                 }
 
                                 if (currentMins >= endMins && !curAbsen && !alphaSesi[notifKey]) {
@@ -226,8 +256,7 @@
                                             if(allAlpha && hasSesi) dataBulananApp[klsId][rAppIdx].data[tglIdx] = "A";
                                         }
                                     }
-                                    alphaSesi[notifKey] = true;
-                                    localStorage.setItem('AlphaSesi_' + now.getDate(), JSON.stringify(alphaSesi));
+                                    alphaSesi[notifKey] = true; localStorage.setItem('AlphaSesi_' + now.getDate(), JSON.stringify(alphaSesi));
                                     isDataChanged = true;
                                 }
                             }
@@ -242,10 +271,13 @@
             }
         }
 
+        // =========================================================
+        // JAM REAL-TIME APP
+        // =========================================================
         function startClock() {
             setInterval(() => {
                 const now = new Date();
-                document.getElementById('digital-clock').innerHTML = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                document.getElementById('digital-clock').innerHTML = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}<span class="text-2xl text-indigo-300 font-normal ml-1">WIB</span>`;
                 
                 const hariArr = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
                 const bulanArr = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
@@ -258,6 +290,9 @@
             }, 1000);
         }
 
+        // =========================================================
+        // LOAD DATA & URUTAN NAMA (FIXED)
+        // =========================================================
         window.addEventListener('DOMContentLoaded', async () => {
             startClock();
             try {
@@ -268,11 +303,16 @@
                 if(snapGuru.exists()) {
                     let allGurus = [];
                     let rawGuru = snapGuru.val();
+                    
+                    // Jaga Urutan Asli sesuai Master Data
                     KELAS_LIST.forEach(k => {
                         if(rawGuru[k.id]) {
-                            rawGuru[k.id].forEach(g => { if(!allGurus.includes(g.nama)) allGurus.push(g.nama); });
+                            rawGuru[k.id].forEach(g => { 
+                                if(!allGurus.includes(g.nama)) allGurus.push(g.nama); 
+                            });
                         }
                     });
+                    
                     const selector = document.getElementById('guru-selector');
                     selector.innerHTML = `<option value="" disabled selected>-- Pilih Nama Anda --</option>`;
                     allGurus.forEach(nama => selector.innerHTML += `<option value="${nama}">${nama}</option>`);
@@ -283,9 +323,40 @@
             else { document.getElementById('loader').classList.add('hidden-section'); document.getElementById('login-view').classList.remove('hidden-section'); }
         });
 
-        window.loginGuru = function() {
+        // =========================================================
+        // SISTEM LOGIN & PIN RAHASIA
+        // =========================================================
+        window.loginGuru = async function() {
             const nama = document.getElementById('guru-selector').value;
-            if (!nama) { alert("Tafadhol, pilih nama Anda."); return; }
+            if (!nama) { alert("Tafadhol, pilih nama Anda terlebih dahulu."); return; }
+            
+            // Format ID yang aman untuk Node Firebase PIN
+            let safeName = nama.replace(/[\.\#\$\[\]]/g, '').replace(/\s+/g, '_');
+            const pinRef = ref(db, `Settings/GuruPINs/${safeName}`);
+            
+            try {
+                const snap = await get(pinRef);
+                if(snap.exists()) {
+                    let savedPin = snap.val();
+                    let inputPin = prompt(`🔑 KEAMANAN AKUN\n\nSilakan masukkan PIN rahasia untuk akun:\n${nama}`);
+                    
+                    if(inputPin === null) return; 
+                    if(inputPin.trim() !== savedPin) {
+                        alert("❌ PIN Salah! Akses ditolak. Hubungi Admin jika lupa PIN.");
+                        return; 
+                    }
+                } else {
+                    let newPin = prompt(`🛡️ PEMBUATAN PIN BARU\n\nIni adalah pengaturan awal. Buat PIN rahasia (Angka/Huruf) untuk mengunci akun ${nama} agar tidak digunakan orang lain:`);
+                    if(!newPin || newPin.trim() === "") { alert("❌ Anda harus membuat PIN untuk mengamankan akun ini."); return; }
+                    
+                    await set(pinRef, newPin.trim());
+                    alert("✅ PIN Berhasil disimpan! Mohon selalu ingat PIN ini.");
+                }
+            } catch(e) {
+                alert("Gagal memverifikasi keamanan. Pastikan internet stabil.");
+                return;
+            }
+
             localStorage.setItem('AppGuru_Nama', nama); loggedInGuruName = nama;
             window.mintaIzinNotifikasi();
             document.getElementById('login-view').classList.add('hidden-section');
@@ -293,13 +364,17 @@
         }
 
         window.logoutGuru = function() {
-            if(confirm("Keluar dari akun?")) {
+            if(confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
                 localStorage.removeItem('AppGuru_Nama'); loggedInGuruName = null;
                 document.getElementById('app-view').classList.add('hidden-section');
                 document.getElementById('login-view').classList.remove('hidden-section');
+                document.getElementById('guru-selector').value = "";
             }
         }
 
+        // =========================================================
+        // RENDER DASHBOARD & FILTER KELAS OTOMATIS
+        // =========================================================
         async function tampilkanDashboard(namaGuru) {
             document.getElementById('loader').classList.remove('hidden-section');
             document.getElementById('display-nama').innerText = namaGuru;
@@ -325,7 +400,7 @@
                 const snapApp = await get(ref(db, `Rekap_V4/${bulanKey}/DataHarian`));
                 if(snapApp.exists()) dataBulananApp = snapApp.val();
 
-                // SETUP KELAS DINAMIS
+                // SETUP KELAS DINAMIS (Hanya munculkan kelas yg ada jadwal hari ini)
                 let hariIdx = new Date().getDay(); 
                 let idxArrayMapel = hariIdx === 0 ? 6 : hariIdx - 1; 
                 let optKelas = ''; let info = []; let kelasAktifCount = 0;
@@ -333,14 +408,15 @@
                 Object.keys(jadwalMapelData).forEach(klsId => {
                     let klsObj = KELAS_LIST.find(k => k.id === klsId);
                     let jadwalGuruDiKelasIni = jadwalMapelData[klsId].find(g => g.nama === namaGuru);
+                    
                     if(jadwalGuruDiKelasIni && jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel] && jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel].trim() !== "") {
-                        info.push(`<b>${klsObj.nama}:</b> ${jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel]}`);
+                        info.push(`<div class="bg-white p-2 rounded border border-blue-100 mb-1 text-left"><span class="font-black text-blue-800 text-xs">${klsObj.nama}</span><br><span class="text-gray-600 font-medium text-xs leading-snug">${jadwalGuruDiKelasIni.jadwalMapel[idxArrayMapel].replace(/\n/g, '<br>')}</span></div>`);
                         optKelas += `<option value="${klsId}">${klsObj.nama}</option>`;
                         kelasAktifCount++;
                     }
                 });
 
-                document.getElementById('info-jadwal-mapel').innerHTML = info.length > 0 ? info.join('<br>') : '<span class="text-gray-400 font-normal">Tidak ada jadwal mengajar hari ini.</span>';
+                document.getElementById('info-jadwal-mapel').innerHTML = info.length > 0 ? info.join('') : '<span class="text-gray-500 font-medium italic block py-2">Tidak ada jadwal mengajar untuk hari ini. Waktunya istirahat!</span>';
                 
                 const btnUtama = document.getElementById('btn-absen-utama');
                 if(kelasAktifCount > 0) {
@@ -348,7 +424,7 @@
                     document.getElementById('input-kelas').disabled = false;
                     btnUtama.disabled = false; btnUtama.classList.remove('opacity-50', 'cursor-not-allowed');
                 } else {
-                    document.getElementById('input-kelas').innerHTML = '<option value="" disabled selected>Tidak ada jadwal kelas</option>';
+                    document.getElementById('input-kelas').innerHTML = '<option value="" disabled selected>Tidak ada kelas hari ini</option>';
                     document.getElementById('input-kelas').disabled = true;
                     btnUtama.disabled = true; btnUtama.classList.add('opacity-50', 'cursor-not-allowed');
                 }
@@ -376,7 +452,24 @@
             let htmlSesi = '';
             isLate = false;
 
+            let hariIdx = now.getDay(); let idxArrayMapel = hariIdx === 0 ? 6 : hariIdx - 1; 
+            let jadwalGuru = jadwalMapelData[kelasId].find(g => g.nama === loggedInGuruName);
+            let targetSesis = [];
+            
+            if(jadwalGuru && jadwalGuru.jadwalMapel[idxArrayMapel]) {
+                let matches = jadwalGuru.jadwalMapel[idxArrayMapel].match(/Sesi\s*([\d\-,]+)/gi);
+                if(matches) {
+                    matches.forEach(m => {
+                        let s = m.replace(/Sesi\s*/i, '').trim();
+                        if(s.includes('-')) { let p = s.split('-'); for(let i=parseInt(p[0]); i<=parseInt(p[1]); i++) targetSesis.push(i); }
+                        else if(s.includes(',')) { targetSesis.push(...s.split(',').map(Number)); } else { targetSesis.push(parseInt(s)); }
+                    });
+                }
+            }
+
             for(let i=1; i<=9; i++) {
+                if(targetSesis.length > 0 && !targetSesis.includes(i)) continue; 
+
                 let textWaktu = opsiWaktuSesi[i];
                 if(textWaktu && textWaktu !== "0") {
                     htmlSesi += `<option value="${i-1}">Sesi ${i} (${textWaktu})</option>`;
@@ -405,10 +498,13 @@
                 statusTelat.innerHTML = `<span class="text-red-500 font-bold"><i class="fas fa-exclamation-circle"></i> Jam masuk telah lewat batas toleransi 5 menit.</span>`;
             } else {
                 wadahTelat.classList.add('hidden-section');
-                statusTelat.innerHTML = `<i class="fas fa-robot"></i> Sistem otomatis memilih sesi terdekat.`;
+                statusTelat.innerHTML = `<i class="fas fa-robot text-indigo-500"></i> Sistem otomatis memilih sesi sesuai jadwal Anda.`;
             }
         }
 
+        // =========================================================
+        // FUNGSI PENGIRIMAN DATA
+        // =========================================================
         window.kirimAbsenHadir = async function() {
             const kelasId = document.getElementById('input-kelas').value;
             const sesiIdx = parseInt(document.getElementById('input-sesi').value);
@@ -435,7 +531,7 @@
                 if(rAppIdx !== -1) {
                     let noteSekarang = dataBulananApp[kelasId][rAppIdx].catatan || "";
                     let catBaru = `Tgl ${dt.getDate()}: Terlambat Sesi ${sesiIdx+1} (${alasanTelat})`;
-                    dataBulananApp[kelasId][rAppIdx].catatan = noteSekarang ? noteSekarang + "\n" + catBaru : catBaru;
+                    if(!noteSekarang.includes(catBaru)) dataBulananApp[kelasId][rAppIdx].catatan = noteSekarang ? noteSekarang + "\n" + catBaru : catBaru;
                 }
             }
 
@@ -447,11 +543,16 @@
                 await set(ref(db, `Rekap_V4/${bulanKey}/WaktuHadir_HarianSesi`), waktuData);
                 if(isLate) await set(ref(db, `Rekap_V4/${bulanKey}/DataHarian`), dataBulananApp);
 
-                btn.classList.replace('bg-indigo-600', 'bg-emerald-500');
+                btn.classList.replace('from-gray-900', 'from-emerald-500');
+                btn.classList.replace('to-indigo-900', 'to-emerald-600');
                 btn.innerHTML = `<i class="fas fa-check-circle text-2xl"></i> TEREKAM MASUK: ${jamSekarang}`;
                 if(isLate) document.getElementById('input-alasan-telat').value = "";
 
-                setTimeout(() => { btn.classList.replace('bg-emerald-500', 'bg-indigo-600'); btn.innerHTML = originalHTML; btn.disabled = false; }, 3000);
+                setTimeout(() => { 
+                    btn.classList.replace('from-emerald-500', 'from-gray-900');
+                    btn.classList.replace('to-emerald-600', 'to-indigo-900');
+                    btn.innerHTML = originalHTML; btn.disabled = false; 
+                }, 3000);
             } catch (error) { alert("Gagal merekam! Cek koneksi internet."); btn.innerHTML = originalHTML; btn.disabled = false; }
         }
 
@@ -509,7 +610,7 @@
 
             try {
                 await set(ref(db, `Rekap_V4/${bulanKey}/DataHarian`), dataBulananApp);
-                alert(`Status ${status === 'S' ? 'Sakit' : 'Izin'} berhasil dikirim ke Admin!`);
+                alert(`Status ${status === 'S' ? 'Sakit' : 'Izin'} berhasil dikirim ke Admin! Syafakallah / Baarakallahu fiik.`);
                 tutupModalHalangan();
             } catch (error) { alert("Gagal mengirim status. Cek internet Anda."); }
         }
